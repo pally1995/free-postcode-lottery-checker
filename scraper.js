@@ -1,20 +1,20 @@
 
 const puppeteer = require("puppeteer");
 
-async function FPL_LogIn() {
-  //Set up puppeteer
+async function accessFPL() {
+  //Set up puppeteer which opens a browser so i am able to inspect what is happening 
 
   const browser = await puppeteer.launch({
     headless: false,
     args: ["--disable-features=site-per-process"],
   });
   const page = await browser.newPage();
-  page.setViewport({ width: 1366, height: 794 });
+  page.setViewport({ width: 1000, height: 900 });
   await page.goto("https://pickmypostcode.com/#", {
     waitUntil: "networkidle0",
   });
 
-  //Log into FPL
+  //Log into FPL using postcode & email address
 
   await page.click(
     "#v-rebrand > div.wrapper.top > div.wrapper--content.wrapper--content__relative > nav > ul > li.nav--buttons.nav--item > button.btn.btn-secondary.btn-cancel"
@@ -45,7 +45,7 @@ async function FPL_LogIn() {
 
   //Wait for video result to load and retrieve result
 
-  await page.click("#v-main-header > div > div > ul > li:nth-child(2) > a");
+  await page.click("#result > div > div.result--footer > div.result--button > a");
   await page.waitForSelector("#bridVideoPlayer > div > div.brid-overlay-play-button.brid-button > span > svg > path:nth-child(2)")
   await page.click("#bridVideoPlayer > div > div.brid-overlay-play-button.brid-button > span > svg > path:nth-child(2)")
   await page.waitForSelector(
@@ -59,7 +59,7 @@ async function FPL_LogIn() {
   
   // Get survey draw
 
-  await page.click("#v-main-header > div > div > ul > li.active.visited > a")
+  await page.click("#result-footer > div > div.result--button > a")
   await page.waitForSelector("#result-survey > div:nth-child(1) > div > div.questions > div.survey-buttons > button.btn.btn-secondary");
   await page.click("#result-survey > div:nth-child(1) > div > div.questions > div.survey-buttons > button.btn.btn-secondary");
   await page.waitForSelector(
@@ -72,16 +72,36 @@ async function FPL_LogIn() {
   console.log(surveyResult);
 
     //Check stackpot Draw
-
-    await page.waitForNavigation();
-    const stackpot = document.querySelectorAll(".result--postcode");
-    const getStackpot = await page.$eval(
-      stackpot,
-      (el) => el.textContent
+    await page.click("#result-footer > div > div.result--button > a");
+    await page.waitForSelector(
+      "#result-header > div > p.result--postcode", {timeout: 40000}
     );
-    console.log(getStackpot)
+
+    //TODO: work out how to get all items from stackpot list - access the children within the result-header div.
+
+
+    //Gets first element in the claimed section - this needs a conditional to skip if claimed doesnt exist
+    const stackpotResultClaimed = await page.$eval(
+      "#result-header > div:nth-child(1) > div:nth-child(3) > p", 
+    (el) => el.textContent   
+   );
+   console.log(stackpotResultClaimed);
+      //This gets the first element of the list of unclaimed prizes
+    const stackpotResult = await page.$eval(
+      "#result-header > div > p.result--postcode", 
+    (el) => el.textContent    
+   );
+   console.log(stackpotResult);
+
+
+    
 
   await browser.close();
 }
 
-FPL_LogIn();
+accessFPL();
+
+
+//removes any commas if needed
+    //   let nodeArray = Array.from(stackpotResult);
+    // console.log(nodeArray.join().replace(/,/g, ''))  
